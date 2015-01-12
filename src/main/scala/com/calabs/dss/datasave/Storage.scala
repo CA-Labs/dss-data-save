@@ -4,7 +4,7 @@ import com.calabs.dss.datasave.GraphStorageComponent.{Neo4jComponent, TitanCompo
 import com.thinkaurelius.titan.core.TitanFactory
 import com.tinkerpop.blueprints.Graph
 import com.tinkerpop.blueprints.impls.arangodb.ArangoDBGraph
-import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph
+import com.tinkerpop.blueprints.impls.neo4j2.Neo4j2Graph
 import org.apache.commons.configuration.BaseConfiguration
 
 import scala.util.{Failure, Success, Try}
@@ -22,9 +22,9 @@ object StorageType {
 }
 
 object DocumentType {
-  val DOCUMENT = "1"
-  val NODE = "2"
-  val EDGE = "3"
+  val DOCUMENT = 1
+  val NODE = 2
+  val EDGE = 3
 }
 
 sealed trait Storage
@@ -40,8 +40,8 @@ sealed trait DocumentStorage extends Storage {
 sealed trait GraphStorage extends Storage {
   // Dependency injection
   self: GraphStorageComponent =>
-  protected[this] val blueprintsConf = "blueprints"
-  def saveMetrics(data: Map[String, Any], documentType: Int) : Unit = {
+  protected[this] val blueprintsConfPrefix = "blueprints."
+  def saveMetrics(data: Map[String, Any], documentType: Int)(implicit graph: Graph) : Unit = {
     storageRepository.save(data, documentType)
   }
 }
@@ -84,7 +84,16 @@ object GraphStorageComponent {
   trait Neo4jComponent extends GraphStorageComponent {
     def storageRepository = new Neo4jStorageRepository
     class Neo4jStorageRepository extends GraphStorageRepository {
-      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = ???
+      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = {
+        documentType match {
+          case DocumentType.NODE => data.foreach(v => {
+            val node = graph.addVertex(null)
+            node.setProperty(v._1, v._2)
+          })
+          case DocumentType.EDGE => throw new IllegalArgumentException(s"Edges storage not supported yet.")
+          case DocumentType.DOCUMENT => throw new IllegalArgumentException(s"Documents storage not supported yet.")
+        }
+      }
     }
   }
 
@@ -106,32 +115,34 @@ object GraphStorageComponent {
 
 class Neo4j(props: Map[String, String]) extends GraphStorage with Neo4jComponent {
 
-  private[this] val neo4jConf = "blueprints.neo4j.conf."
+  private[this] val neo4jPrefix = "neo4j."
+  private[this] val neo4jConfPrefix = "conf."
+  private[this] val confPrefix = blueprintsConfPrefix ++ neo4jPrefix ++ neo4jConfPrefix
 
   private[this] object Props {
     val DIRECTORY = "directory"
   }
 
-  private[this] val requiredProps = List(Props.DIRECTORY).map(prop => blueprintsConf ++ prop)
+  private[this] val requiredProps = List(Props.DIRECTORY).map(prop => (prop, blueprintsConfPrefix ++ neo4jPrefix ++ prop)).toMap
 
   // Drops Blueprints related properties so that only exclusive vendor db properties are left
   private[this] def getNeo4jProps : Map[String, String] = {
-    props.filter(prop => !requiredProps.contains(prop._1))
+    props.filter(prop => !requiredProps.containsValue(prop._1))
   }
 
-  override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop))
+  override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop._2))
 
-  override def checkConfigProps: Boolean = props.forall(prop => prop._1.startsWith(neo4jConf))
+  override def checkConfigProps: Boolean = getNeo4jProps.forall(prop => prop._1.startsWith(confPrefix))
 
   // Graph initialization
   val requiredPropsOk = checkRequiredProps
   val configPropsOk = checkConfigProps
 
-  val graph = Try(
+  implicit val graph : Graph = Try(
     {
       if (!requiredPropsOk) throw new IllegalArgumentException(s"Wrong required parameters for Neo4j storage component. The following parameters are required: $requiredProps.")
-      else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for Neo4j storage component. Please do check they all start with $neo4jConf.")
-      else new Neo4jGraph(props.get(Props.DIRECTORY), getNeo4jProps)
+      else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for Neo4j storage component. Please do check they all start with $confPrefix.")
+      else new Neo4j2Graph(props.get(requiredProps.get(Props.DIRECTORY)), getNeo4jProps)
     }
   ) match {
     case Success(graph) => graph
@@ -183,7 +194,7 @@ class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent
 
   }
 
-  private[this] val requiredProps = List().map(prop => blueprintsConf ++ prop)
+  private[this] val requiredProps = List().map(prop => blueprintsConfPrefix ++ prop)
 
   override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop))
 

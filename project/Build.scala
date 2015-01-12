@@ -25,7 +25,7 @@ object MyBuild extends Build {
         "com.github.scopt" %% "scopt" % "3.2.0",
         "org.json4s" %% "json4s-jackson" % "3.2.11",
         "com.tinkerpop.blueprints" % "blueprints-core" % "2.6.0",
-        "com.tinkerpop.blueprints" % "blueprints-neo4j-graph" % "2.6.0",
+        "com.tinkerpop.blueprints" % "blueprints-neo4j2-graph" % "2.6.0",
         "com.thinkaurelius.titan" % "titan-core" % "0.5.2",
         "com.tinkerpop.blueprints" % "blueprints-arangodb-graph" % "1.0.10-SNAPSHOT"
       ),
