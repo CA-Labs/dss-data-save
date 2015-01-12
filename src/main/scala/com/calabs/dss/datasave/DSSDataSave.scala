@@ -1,6 +1,12 @@
 package com.calabs.dss.datasave
 
+import org.json4s.jackson.Serialization
 import scopt.OptionParser
+
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by Jordi Aranda
@@ -22,10 +28,21 @@ object DSSDataSave {
         c.copy(properties = x)} text("Blueprints and concrete vendor properties for underlying chosen database storage")
     }
 
+    implicit val formats = DefaultFormats
+
     parser.parse(args, Config("database", "properties")) map {
       config => {
-        // TODO: Read JSON from stdin, parse metrics and store them into selected db
-        for(ln <- io.Source.stdin.getLines) println(ln)
+        var jsonString = new StringBuilder
+        io.Source.stdin.getLines.foreach(line => jsonString ++= line)
+        val json = Try(parse(jsonString.toString).extract[Map[String, Any]])
+        val result = json match {
+          case Success(j) => {
+            println(j)
+            Serialization.write(List("status" -> "ok").toMap)
+          }
+          case Failure(e) => Serialization.write((List(("exception" -> true), ("reason" -> e.getMessage)).toMap))
+        }
+        println(result)
       }
     }
 

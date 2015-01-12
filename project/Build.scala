@@ -23,9 +23,17 @@ object MyBuild extends Build {
       libraryDependencies ++= Seq(
         "org.scalatest" %% "scalatest" % "2.2.1",
         "com.github.scopt" %% "scopt" % "3.2.0",
-        "org.json4s" %% "json4s-jackson" % "3.2.10"
+        "org.json4s" %% "json4s-jackson" % "3.2.11",
+        "com.tinkerpop.blueprints" % "blueprints-core" % "2.6.0",
+        "com.tinkerpop.blueprints" % "blueprints-neo4j-graph" % "2.6.0",
+        "com.thinkaurelius.titan" % "titan-core" % "0.5.2",
+        "com.tinkerpop.blueprints" % "blueprints-arangodb-graph" % "1.0.10-SNAPSHOT"
       ),
-      resolvers += Resolver.sonatypeRepo("public")
+      resolvers ++= Seq(
+        Resolver.sonatypeRepo("public"),
+        Resolver.sonatypeRepo("snapshots"),
+        "DSS Artifactory (snapshots)" at "http://147.83.42.135:8081/artifactory/snapshots"
+      )
     )
   )
 }
