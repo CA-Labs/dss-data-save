@@ -28,7 +28,7 @@ class Neo4jStorageComponentSpec extends FunSpec with BeforeAndAfter with Neo4jCo
 
   describe("Neo4j Storage Component") {
 
-    ignore("should fail to instantiate with missing required params"){
+    it ("should fail to instantiate with missing required params"){
       intercept[IllegalArgumentException] {
         val neo4jClient = new Neo4j(koProps)
       }
