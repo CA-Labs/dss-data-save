@@ -25,6 +25,11 @@ class ArangoStorageComponentSpec extends FunSpec with BeforeAndAfter with Arango
 
   val nodes = Map(("a" -> 1), ("b" -> 2))
 
+  before {
+    graph.getVertices.asScala.foreach(node => graph.removeVertex(node))
+    graph.getEdges.asScala.foreach(edge => graph.removeEdge(edge))
+  }
+
   describe("Arango Storage Component"){
 
     it ("should be able to load a graph from graph properties"){
