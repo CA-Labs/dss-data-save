@@ -100,14 +100,32 @@ object GraphStorageComponent {
   trait ArangoDBComponent extends GraphStorageComponent {
     def storageRepository = new ArangoDBRepository
     class ArangoDBRepository extends GraphStorageRepository {
-      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = ???
+      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = {
+        documentType match {
+          case DocumentType.NODE => data.foreach(v => {
+            val node = graph.addVertex(null)
+            node.setProperty(v._1, v._2)
+          })
+          case DocumentType.EDGE => throw new IllegalArgumentException(s"Edges storage not supported yet.")
+          case DocumentType.DOCUMENT => throw new IllegalArgumentException(s"Documents storage not supported yet.")
+        }
+      }
     }
   }
 
   trait TitanComponent extends GraphStorageComponent {
     def storageRepository = new TitanRepository
     class TitanRepository extends GraphStorageRepository {
-      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = ???
+      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = {
+        documentType match {
+          case DocumentType.NODE => data.foreach(v => {
+            val node = graph.addVertex(null)
+            node.setProperty(v._1, v._2)
+          })
+          case DocumentType.EDGE => throw new IllegalArgumentException(s"Edges storage not supported yet.")
+          case DocumentType.DOCUMENT => throw new IllegalArgumentException(s"Documents storage not supported yet.")
+        }
+      }
     }
   }
 
@@ -153,7 +171,9 @@ class Neo4j(props: Map[String, String]) extends GraphStorage with Neo4jComponent
 
 class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBComponent {
 
-  private[this] val arangoDbConf = "blueprints.arangodb.conf."
+  private[this] val arangoDbPrefix = "arangodb."
+  private[this] val arangoDbConfPrefix = "conf."
+  private[this] val confPrefix = blueprintsConfPrefix ++ arangoDbPrefix ++ arangoDbConfPrefix
 
   private[this] object Props {
     val HOST = "host"
@@ -163,11 +183,16 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
     val EDGES_COLLECTION = "edgesCollectionName"
   }
 
-  private[this] val requiredProps = List(Props.HOST, Props.PORT, Props.NAME, Props.VERTICES_COLLECTION, Props.EDGES_COLLECTION).map(prop => arangoDbConf ++ prop)
+  private[this] val requiredProps = List(Props.HOST, Props.PORT, Props.NAME, Props.VERTICES_COLLECTION, Props.EDGES_COLLECTION).map(prop => (prop, blueprintsConfPrefix ++ arangoDbPrefix ++ prop)).toMap
 
-  override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop))
+  // Drops Blueprints related properties so that only exclusive vendor db properties are left
+  private[this] def getArangoDBProps : Map[String, String] = {
+    props.filter(prop => !requiredProps.containsValue(prop._1))
+  }
 
-  override def checkConfigProps: Boolean = props.forall(prop => prop._1.startsWith(arangoDbConf))
+  override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop._2))
+
+  override def checkConfigProps: Boolean = getArangoDBProps.forall(prop => prop._1.startsWith(confPrefix))
 
   // Graph initialization
   val requiredPropsOk = checkRequiredProps
@@ -176,8 +201,8 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
   val graph = Try(
     {
       if (!requiredPropsOk) throw new IllegalArgumentException(s"Wrong required parameters for ArangoDB storage component. The following parameters are required: $requiredProps.")
-      else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for ArangoDB storage component. Please do check they all start with $arangoDbConf.")
-      else new ArangoDBGraph(props.get(Props.HOST), props.get(Props.PORT), props.get(Props.NAME).get, props.get(Props.VERTICES_COLLECTION), props.get(Props.EDGES_COLLECTION))
+      else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for ArangoDB storage component. Please do check they all start with $confPrefix.")
+      else new ArangoDBGraph(props.get(requiredProps.get(Props.HOST)), props.get(requiredProps.get(Props.PORT)), props.get(requiredProps.get(Props.NAME)), props.get(requiredProps.get(Props.VERTICES_COLLECTION)), props.get(requiredProps.get(Props.EDGES_COLLECTION)))
     }
   ) match {
     case Success(graph) => graph

@@ -36,7 +36,7 @@ class Neo4jStorageComponentSpec extends FunSpec with BeforeAndAfter with Neo4jCo
 
     it ("should be able to load a graph from graph properties and store nodes"){
       neo4jClient.saveMetrics(nodes, DocumentType.NODE)
-      assert(neo4jClient.graph.getVertices.asScala.size == nodes.size)
+      assert(graph.getVertices.asScala.size == nodes.size)
     }
 
   }
