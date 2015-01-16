@@ -27,12 +27,14 @@ object MyBuild extends Build {
         "com.tinkerpop.blueprints" % "blueprints-core" % "2.6.0",
         "com.tinkerpop.blueprints" % "blueprints-neo4j2-graph" % "2.6.0",
         "com.thinkaurelius.titan" % "titan-core" % "0.5.2",
-        "com.tinkerpop.blueprints" % "blueprints-arangodb-graph" % "1.0.10-SNAPSHOT"
+        "com.tinkerpop.blueprints" % "blueprints-arangodb-graph" % "1.0.10-SNAPSHOT",
+        "com.calabs" %% "dss-data-import" % "0.0.1-SNAPSHOT"
       ),
       resolvers ++= Seq(
         Resolver.sonatypeRepo("public"),
         Resolver.sonatypeRepo("snapshots"),
-        "DSS Artifactory (snapshots)" at "http://147.83.42.135:8081/artifactory/snapshots"
+        "DSS Artifactory (sbt-snapshots)" at "http://147.83.42.135:8081/artifactory/sbt-snapshots",
+        "DSS Artifactory (maven-snapshots)" at "http://147.83.42.135:8081/artifactory/snapshots"
       )
     )
   )
