@@ -41,10 +41,11 @@ Example of the input:
             "__from": {
                 "name": "value",
                 "property2": "value2"
+            },
             "__to": {
                 "name": "value",
                 "property1": "value1"
-            }
+            },
             "metric": 5
         }
     ],
