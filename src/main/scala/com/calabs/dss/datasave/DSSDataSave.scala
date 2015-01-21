@@ -1,12 +1,17 @@
 package com.calabs.dss.datasave
 
+import com.calabs.dss.dataimport.{Edge, Vertex, DataResourceMapper}
+import com.calabs.dss.dataimport.Parsing.Tags
 import org.json4s.jackson.Serialization
+import org.json4s.jackson.Serialization.{read, write}
 import scopt.OptionParser
 
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
+import scala.collection.mutable.{Map => MutableMap}
 
 /**
  * Created by Jordi Aranda
@@ -18,12 +23,25 @@ object DSSDataSave {
 
   case class Config(db: String, properties: String)
 
+  case class InputData(vertices: JArray, edges: JArray)
+
+  def loadDbProps(path: String) : Map[String,String] = {
+    val sourceFile = Source.fromFile(path)
+    val sourceContent = sourceFile.getLines().toList
+    val props = MutableMap[String, String]()
+    sourceContent.map(line => {
+      val keyValue = line.split(Tags.KEY_VALUE_SEPARATOR)
+      if (keyValue.length != 2) throw new IllegalArgumentException(s"Wrong key value $keyValue") else props.update(keyValue(0), keyValue(1))
+    })
+    props.toMap
+  }
+
   def main(args: Array[String]) : Unit = {
 
     val parser = new OptionParser[Config]("dss-data-save") {
       head("DSS Data Save tool", "0.0.1")
       opt[String]('d', "database") required() action{ (x,c) =>
-        c.copy(db = x)} text("Database backend (current supported implementations are 'neo4j', 'titan' and 'arangodb')")
+        c.copy(db = x)} text("Database backend (current supported implementations are: 'arangodb')")
       opt[String]('p', "properties") required() action{ (x,c) =>
         c.copy(properties = x)} text("Blueprints and concrete vendor properties for underlying chosen database storage")
     }
@@ -33,16 +51,36 @@ object DSSDataSave {
     parser.parse(args, Config("database", "properties")) map {
       config => {
         var jsonString = new StringBuilder
-        io.Source.stdin.getLines.foreach(line => jsonString ++= line)
-        val json = Try(parse(jsonString.toString).extract[Map[String, Any]])
-        val result = json match {
-          case Success(j) => {
-            println(j)
-            Serialization.write(List("status" -> "ok").toMap)
+        Source.stdin.getLines.foreach(line => jsonString ++= line)
+        val json = Try(read[InputData](jsonString.toString))
+        val props = Try(loadDbProps(config.properties))
+        (json, props) match {
+          case (Success(j), Success(props)) => {
+            config.db match {
+              case Storage.Db.ArangoDB => {
+                val arango = new ArangoDB(props)
+                implicit val graph = arango.graph
+                // Save vertices
+                j.vertices.arr.foreach(vertex => vertex match {
+                  case JObject(props) => arango.saveDocument(Vertex(props.toMap))
+                  case _ => throw new IllegalArgumentException(s"Wrong vertex: $vertex")
+                })
+                // Save edges
+                j.edges.arr.foreach(edge => edge match {
+                  case JObject(props) => arango.saveDocument(Edge(props.toMap))
+                  case _ => throw new IllegalArgumentException(s"Wrong edge: $edge")
+                })
+                // Close graph
+                graph.shutdown()
+              }
+              case Storage.Db.Neo4j => throw new UnsupportedOperationException(s"Neo4j is not supported yet!")
+              case Storage.Db.Titan => throw new UnsupportedOperationException(s"Titan is not supported yet!")
+              case _ => throw new UnsupportedOperationException(s"Unsupported database backend")
+            }
           }
-          case Failure(e) => Serialization.write((List(("exception" -> true), ("reason" -> e.getMessage)).toMap))
+          case (Failure(e), _) => Serialization.write(List(("exception" -> true), ("reason" -> s"Invalid input: ${e.getMessage}")).toMap)
+          case (_, Failure(e)) => Serialization.write(List(("error" -> true), ("reason" -> s"Invalid database properties: ${e.getMessage}")).toMap)
         }
-        println(result)
       }
     }
 

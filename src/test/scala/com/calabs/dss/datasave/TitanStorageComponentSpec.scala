@@ -12,13 +12,9 @@ class TitanStorageComponentSpec extends FunSpec {
 
   describe("Titan Storage Component"){
 
-    ignore("should be able to load a graph from graph properties"){
+    ignore("should be able to load a graph from graph properties"){}
 
-    }
-
-    ignore("should be able to save nodes and edges"){
-
-    }
+    ignore("should be able to save nodes and edges"){}
 
   }
 

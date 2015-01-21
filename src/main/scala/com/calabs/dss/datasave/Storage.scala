@@ -1,14 +1,21 @@
 package com.calabs.dss.datasave
 
+import com.calabs.dss.dataimport.Parsing.Tags
+import com.calabs.dss.dataimport.{Parsing, Edge, Vertex, Document}
 import com.calabs.dss.datasave.GraphStorageComponent.{Neo4jComponent, TitanComponent, ArangoDBComponent}
 import com.thinkaurelius.titan.core.TitanFactory
 import com.tinkerpop.blueprints.Graph
-import com.tinkerpop.blueprints.impls.arangodb.ArangoDBGraph
+import com.tinkerpop.blueprints.impls.arangodb.{ArangoDBGraphQuery, ArangoDBGraph}
+import com.tinkerpop.blueprints.impls.arangodb.client.ArangoDBConfiguration
 import com.tinkerpop.blueprints.impls.neo4j2.Neo4j2Graph
+
 import org.apache.commons.configuration.BaseConfiguration
+import org.json4s.JsonAST._
 
 import scala.util.{Failure, Success, Try}
 import collection.JavaConversions._
+
+import com.tinkerpop.blueprints.{Vertex => BlueprintsVertex, Edge => BlueprintsEdge}
 
 /**
  * Created by Jordi Aranda
@@ -16,24 +23,21 @@ import collection.JavaConversions._
  * 9/1/15
  */
 
-object StorageType {
-  val DOCUMENT = "1"
-  val GRAPH = "2"
-}
-
-object DocumentType {
-  val DOCUMENT = 1
-  val NODE = 2
-  val EDGE = 3
-}
-
 sealed trait Storage
+
+object Storage {
+  object Db {
+    val ArangoDB = "arangodb"
+    val Neo4j = "neo4j"
+    val Titan = "titan"
+  }
+}
 
 sealed trait DocumentStorage extends Storage {
   // Dependency injection
   self: DocumentStorageComponent =>
-  def saveMetrics(data: Map[String, Any]) : Unit = {
-    storageRepository.save(data)
+  def saveDocument(doc: Document) : Unit = {
+    storageRepository.saveDocument(doc)
   }
 }
 
@@ -41,8 +45,8 @@ sealed trait GraphStorage extends Storage {
   // Dependency injection
   self: GraphStorageComponent =>
   protected[this] val blueprintsConfPrefix = "blueprints."
-  def saveMetrics(data: Map[String, Any], documentType: Int)(implicit graph: Graph) : Unit = {
-    storageRepository.save(data, documentType)
+  def saveDocument(doc: Document)(implicit graph: Graph) : Unit = {
+    storageRepository.saveDocument(doc)
   }
 }
 
@@ -60,20 +64,44 @@ sealed trait StorageComponent {
     conf
   }
 
+  def handleBigs(value: Any) = value match {
+    case bi: BigInt => bi.toDouble
+    case bd: BigDecimal => bd.toDouble
+    case _ => value
+  }
+
   trait StorageRepository
 }
 
 sealed trait DocumentStorageComponent extends StorageComponent {
   def storageRepository : DocumentStorageRepository
   trait DocumentStorageRepository extends StorageRepository {
-    def save(data: Map[String, Any]) : Unit
+    def saveDocument(doc: Document) : Unit
+    def insertOrUpdate(doc: Document) : Unit
   }
 }
 
 sealed trait GraphStorageComponent extends StorageComponent {
+  /**
+   * Pair of criteria remaining equal and to be updated.
+   * @param doc The document to update.
+   * @return
+   */
+  def getLookUpCriteria(doc: Document) : (Map[String, JValue], Map[String, JValue]) = doc match {
+    case v: Vertex => {
+      (doc.props.filter{ case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO) },
+        doc.props.filter{ case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO) })
+    }
+    case e: Edge => {
+      (doc.props.filter{ case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA)},
+        doc.props.filter{ case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO) })
+    }
+  }
+
   def storageRepository: GraphStorageRepository
   trait GraphStorageRepository extends StorageRepository {
-    def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph) : Unit
+    def saveDocument(doc: Document)(implicit graph: Graph) : Unit
+    def insertOrUpdate(doc: Document)(implicit graph: Graph) : Unit
   }
 }
 
@@ -84,48 +112,110 @@ object GraphStorageComponent {
   trait Neo4jComponent extends GraphStorageComponent {
     def storageRepository = new Neo4jStorageRepository
     class Neo4jStorageRepository extends GraphStorageRepository {
-      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = {
-        documentType match {
-          case DocumentType.NODE => data.foreach(v => {
-            val node = graph.addVertex(null)
-            node.setProperty(v._1, v._2)
-          })
-          case DocumentType.EDGE => throw new IllegalArgumentException(s"Edges storage not supported yet.")
-          case DocumentType.DOCUMENT => throw new IllegalArgumentException(s"Documents storage not supported yet.")
-        }
-      }
+      override def saveDocument(doc: Document)(implicit graph: Graph): Unit = ???
+      override def insertOrUpdate(doc: Document)(implicit graph: Graph): Unit = ???
     }
   }
 
   trait ArangoDBComponent extends GraphStorageComponent {
     def storageRepository = new ArangoDBRepository
     class ArangoDBRepository extends GraphStorageRepository {
-      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = {
-        documentType match {
-          case DocumentType.NODE => data.foreach(v => {
-            val node = graph.addVertex(null)
-            node.setProperty(v._1, v._2)
-          })
-          case DocumentType.EDGE => throw new IllegalArgumentException(s"Edges storage not supported yet.")
-          case DocumentType.DOCUMENT => throw new IllegalArgumentException(s"Documents storage not supported yet.")
+
+      override def saveDocument(doc: Document)(implicit graph: Graph): Unit = doc match {
+        case v: Vertex => insertOrUpdate(v)
+        case e: Edge => insertOrUpdate(e)
+        case _ => throw new IllegalArgumentException(s"ArangoDB can only handle either vertices or edges document types")
+      }
+
+      /**
+       * Saves or updates a document (either an [[Edge]] or a [[Vertex]]) depending on its properties.
+       * @param doc The document to save or update.
+       * @param graph The graph where this document will be saved or updated.
+       * @return
+       */
+      override def insertOrUpdate(doc: Document)(implicit graph: Graph) : Unit = {
+        if (Parsing.updateRequired(doc.props)){
+          val lookupCriteria = getLookUpCriteria(doc)
+          // This is an update
+          doc match {
+            case v: Vertex => {
+              val vertexId = getVerticesByMultipleCriteria(lookupCriteria._1).head.getId
+              val retrievedVertex = graph.getVertex(vertexId)
+              lookupCriteria._2.foreach{ case (k,v) => retrievedVertex.setProperty(k, handleBigs(v.values)) }
+            }
+            case e: Edge => {
+              val edgeId = getVerticesByMultipleCriteria(lookupCriteria._1).head.getId
+              val retrievedEdge = graph.getEdge(edgeId)
+              lookupCriteria._2.foreach{ case(k,v) => retrievedEdge.setProperty(k, handleBigs(v.values))}
+            }
+            case d: Document => throw new IllegalArgumentException(s"ArangoDB can only handle either vertices or edges document types")
+          }
+        } else {
+          // This is an insert
+          doc match {
+            case v: Vertex => {
+              val vertex = graph.addVertex(null)
+              v.props.foreach{ case (k,v) => vertex.setProperty(k, handleBigs(v.values))}
+            }
+            case e: Edge => {
+              // For edges, we need related vertices id's so first we have to grab them
+              val fromCriteria = e.props.get(Tags.FROM) match {
+                case Some(from) => from match {
+                  case JObject(criteria) => criteria.toMap
+                  case _ => throw new IllegalArgumentException(s"Wrong criteria located at ${Tags.FROM}, must be a map of valid key/values")
+                }
+                case None => throw new IllegalArgumentException(s"Missing ${Tags.FROM} property in edge document")
+              }
+              val toCriteria = e.props.get(Tags.TO) match {
+                case Some(to) => to match {
+                  case JObject(criteria) => criteria.toMap
+                  case _ => throw new IllegalArgumentException(s"Wrong criteria located at ${Tags.TO}, must be a map of valid key/values")
+                }
+                case None => throw new IllegalArgumentException(s"Missing ${Tags.FROM} property in edge document")
+              }
+              val fromVertex = getVerticesByMultipleCriteria(fromCriteria).head
+              val toVertex = getVerticesByMultipleCriteria(toCriteria).head
+              val edge = graph.addEdge(null, fromVertex, toVertex, "")
+            }
+            case d: Document => throw new IllegalArgumentException(s"ArangoDB can only handle either vertices or edges document types")
+          }
         }
       }
+
+      /**
+       * Retrieves vertices by multiple criteria
+       * @param criteria The criteria used for look-up.
+       * @param graph The graph used for querying.
+       * @return
+       */
+      def getVerticesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : Iterable[BlueprintsVertex] = {
+        // TODO: Index usage?
+        val query = graph.query()
+        criteria.foreach{ case (k,v) => query.has(k, handleBigs(v.values)) }
+        query.vertices()
+      }
+
+      /**
+       * Retrieves edges by multiple criteria
+       * @param criteria The criteria used for look-up.
+       * @param graph The graph used for querying.
+       * @return
+       */
+      def getEdgesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : Iterable[BlueprintsEdge] = {
+        // TODO: Index usage?
+        val query = graph.query()
+        criteria.foreach{ case (k,v) => query.has(k, v.values) }
+        query.edges()
+      }
+
     }
   }
 
   trait TitanComponent extends GraphStorageComponent {
     def storageRepository = new TitanRepository
     class TitanRepository extends GraphStorageRepository {
-      override def save(data: Map[String, Any], documentType: Int)(implicit graph: Graph): Unit = {
-        documentType match {
-          case DocumentType.NODE => data.foreach(v => {
-            val node = graph.addVertex(null)
-            node.setProperty(v._1, v._2)
-          })
-          case DocumentType.EDGE => throw new IllegalArgumentException(s"Edges storage not supported yet.")
-          case DocumentType.DOCUMENT => throw new IllegalArgumentException(s"Documents storage not supported yet.")
-        }
-      }
+      override def saveDocument(doc: Document)(implicit graph: Graph): Unit = ???
+      override def insertOrUpdate(doc: Document)(implicit graph: Graph): Unit = ???
     }
   }
 
@@ -178,12 +268,13 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
   private[this] object Props {
     val HOST = "host"
     val PORT = "port"
+    val DB = "db"
     val NAME = "name"
     val VERTICES_COLLECTION = "verticesCollectionName"
     val EDGES_COLLECTION = "edgesCollectionName"
   }
 
-  private[this] val requiredProps = List(Props.HOST, Props.PORT, Props.NAME, Props.VERTICES_COLLECTION, Props.EDGES_COLLECTION).map(prop => (prop, blueprintsConfPrefix ++ arangoDbPrefix ++ prop)).toMap
+  private[this] val requiredProps = List(Props.HOST, Props.PORT, Props.DB, Props.NAME, Props.VERTICES_COLLECTION, Props.EDGES_COLLECTION).map(prop => (prop, blueprintsConfPrefix ++ arangoDbPrefix ++ prop)).toMap
 
   // Drops Blueprints related properties so that only exclusive vendor db properties are left
   private[this] def getArangoDBProps : Map[String, String] = {
@@ -202,7 +293,11 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
     {
       if (!requiredPropsOk) throw new IllegalArgumentException(s"Wrong required parameters for ArangoDB storage component. The following parameters are required: $requiredProps.")
       else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for ArangoDB storage component. Please do check they all start with $confPrefix.")
-      else new ArangoDBGraph(props.get(requiredProps.get(Props.HOST)), props.get(requiredProps.get(Props.PORT)), props.get(requiredProps.get(Props.NAME)), props.get(requiredProps.get(Props.VERTICES_COLLECTION)), props.get(requiredProps.get(Props.EDGES_COLLECTION)))
+      else {
+        val arangoDbConfiguration = new ArangoDBConfiguration(props.get(requiredProps.get(Props.HOST)), props.get(requiredProps.get(Props.PORT)))
+        arangoDbConfiguration.setDb(props.get(requiredProps.get(Props.DB)))
+        new ArangoDBGraph(arangoDbConfiguration, props.get(requiredProps.get(Props.NAME)), props.get(requiredProps.get(Props.VERTICES_COLLECTION)), props.get(requiredProps.get(Props.EDGES_COLLECTION)))
+      }
     }
   ) match {
     case Success(graph) => graph
