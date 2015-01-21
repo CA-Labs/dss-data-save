@@ -1,7 +1,7 @@
 language: scala
 scala: 
   - 2.10.4
-install:
+before_script:
   - sh src/test/resources/setup_arangodb.sh
 notifications:
   email: 
