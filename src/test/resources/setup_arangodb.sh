@@ -55,6 +55,6 @@ done
 
 echo "ArangoDB is up"
 echo "Creating test database..."
-${ARANGOSH} << END
+${ARANGOSH} --javascript.startup-directory ${ARANGODB_DIR}/js << END
 db._createDatabase('test', null, null)
 END
