@@ -20,6 +20,7 @@ TMP_DIR="/tmp/arangodb.$PID"
 PID_FILE="/tmp/arangodb.$PID.pid"
 ARANGODB_DIR="$DIR/$NAME"
 ARANGOD="${ARANGODB_DIR}/bin/arangod_x86_64"
+ARANGOSH="${ARANGODB_DIR}/bin/arangosh"
 
 # create database directory
 mkdir ${TMP_DIR}
@@ -53,3 +54,7 @@ while [[ -z `curl -s 'http://127.0.0.1:8529/_api/version' ` ]] ; do
 done
 
 echo "ArangoDB is up"
+echo "Creating test database..."
+${ARANGOSH} << END
+db._createDatabase('test', null, null)
+END
