@@ -1,0 +1,23 @@
+{
+	"vertices": [
+		{
+			"__name": "newA",
+			"value": 1
+		},
+		{
+			"__name": "newB",
+			"value": 2
+		}
+	],
+	"edges": [
+		{
+			"__name": "newC",
+			"__from": {
+				"name": "newA"
+			},
+			"__to": {
+				"name": "newB"
+			}
+		}
+	]
+}

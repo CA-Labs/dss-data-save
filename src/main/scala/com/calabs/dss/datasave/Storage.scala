@@ -89,12 +89,12 @@ sealed trait GraphStorageComponent extends StorageComponent {
    */
   def getLookUpCriteria(doc: Document) : (Map[String, JValue], Map[String, JValue]) = doc match {
     case v: Vertex => {
-      (doc.props.filter{ case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO) },
-        doc.props.filter{ case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO) })
+      (doc.props.filter{case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO)},
+        doc.props.filter{case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO)})
     }
     case e: Edge => {
-      (doc.props.filter{ case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA)},
-        doc.props.filter{ case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO) })
+      (doc.props.filter{case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA)},
+        doc.props.filter{case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO)})
     }
   }
 
@@ -141,21 +141,20 @@ object GraphStorageComponent {
             case v: Vertex => {
               val vertexId = getVerticesByMultipleCriteria(lookupCriteria._1).head.getId
               val retrievedVertex = graph.getVertex(vertexId)
-              lookupCriteria._2.foreach{ case (k,v) => retrievedVertex.setProperty(k, handleBigs(v.values)) }
+              lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case (k,v) => retrievedVertex.setProperty(k, handleBigs(v.values))}
             }
             case e: Edge => {
-              val edgeId = getVerticesByMultipleCriteria(lookupCriteria._1).head.getId
+              val edgeId = getEdgesByMultipleCriteria(lookupCriteria._1).head.getId
               val retrievedEdge = graph.getEdge(edgeId)
-              lookupCriteria._2.foreach{ case(k,v) => retrievedEdge.setProperty(k, handleBigs(v.values))}
+              lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case(k,v) => retrievedEdge.setProperty(k, handleBigs(v.values))}
             }
-            case d: Document => throw new IllegalArgumentException(s"ArangoDB can only handle either vertices or edges document types")
           }
         } else {
           // This is an insert
           doc match {
             case v: Vertex => {
               val vertex = graph.addVertex(null)
-              v.props.foreach{ case (k,v) => vertex.setProperty(k, handleBigs(v.values))}
+              v.props.foreach{case (k,v) => vertex.setProperty(k, handleBigs(v.values))}
             }
             case e: Edge => {
               // For edges, we need related vertices id's so first we have to grab them
@@ -176,8 +175,9 @@ object GraphStorageComponent {
               val fromVertex = getVerticesByMultipleCriteria(fromCriteria).head
               val toVertex = getVerticesByMultipleCriteria(toCriteria).head
               val edge = graph.addEdge(null, fromVertex, toVertex, "")
+              e.props.filter{case (k,v) => k != Tags.FROM && k != Tags.TO}
+                .foreach{case(k,v) => edge.setProperty(k, handleBigs(v.values))}
             }
-            case d: Document => throw new IllegalArgumentException(s"ArangoDB can only handle either vertices or edges document types")
           }
         }
       }
