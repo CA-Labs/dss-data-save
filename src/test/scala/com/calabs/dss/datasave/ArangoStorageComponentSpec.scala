@@ -5,7 +5,7 @@ import com.calabs.dss.dataimport.{Edge, Vertex}
 import com.calabs.dss.datasave.DSSDataSave.InputData
 import org.json4s.DefaultFormats
 import org.json4s.JsonAST.JObject
-import org.scalatest.{BeforeAndAfter, FunSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, FunSpec}
 import collection.JavaConverters._
 import scala.io.Source
 
@@ -32,10 +32,10 @@ trait ArangoDBConfig {
   implicit val graph = arangoDbClient.graph
 }
 
-class ArangoStorageComponentSpec extends FunSpec with BeforeAndAfter with ArangoDBConfig {
+class ArangoStorageComponentSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with ArangoDBConfig {
 
-  val jsonStringInsert = Source.fromFile(getClass.getResource("/basic-insert.json").getPath).mkString
-  val jsonStringUpdate = Source.fromFile(getClass.getResource("/basic-update.json").getPath).mkString
+  val jsonStringInsert = Source.fromFile(getClass.getResource("/arangodb/basic-insert.json").getPath).mkString
+  val jsonStringUpdate = Source.fromFile(getClass.getResource("/arangodb/basic-update.json").getPath).mkString
   implicit val formats = DefaultFormats
   val inputInsert = read[InputData](jsonStringInsert)
   val inputUpdate = read[InputData](jsonStringUpdate)
@@ -53,6 +53,10 @@ class ArangoStorageComponentSpec extends FunSpec with BeforeAndAfter with Arango
       case JObject(props) => arangoDbClient.saveDocument(Edge(props.toMap))
       case _ => fail(s"Invalid edge $edge")
     })
+  }
+
+  override def afterAll() : Unit = {
+    graph.shutdown()
   }
 
   describe("Arango Storage Component"){

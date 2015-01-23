@@ -1,0 +1,24 @@
+{
+	"vertices": [
+		{
+			"name": "A",
+			"value": 1
+		},
+		{
+			"name": "B",
+			"value": 2
+		}
+	],
+	"edges": [
+		{
+			"name": "C",
+            "label": "has",
+			"__from": {
+				"name": "A"
+			},
+			"__to": {
+				"name": "B"
+			}
+		}
+	]
+}
