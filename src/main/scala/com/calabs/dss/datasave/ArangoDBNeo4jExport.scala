@@ -40,7 +40,7 @@ object ArangoDBNeo4jExport {
     // Commit Neo4j transaction
     neo4jGraph.commit
 
-    // Create ArangoDB edges from Neo4j ones
+    // Create Neo4j edges from ArangoDB ones
     arangoDbEdges.foreach(edge => {
       val outVertex = neo4jGraph.getVertex(edge.getVertex(Direction.OUT).getId)
       val inVertex = neo4jGraph.getVertex(edge.getVertex(Direction.IN).getId)

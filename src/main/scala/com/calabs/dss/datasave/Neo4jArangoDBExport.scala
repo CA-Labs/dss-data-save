@@ -26,7 +26,6 @@ object Neo4jArangoDBExport {
     val neo4jEdges = neo4jGraph.getEdges.toList
     println(s"Number of Neo4j edges found: ${neo4jEdges.length}")
 
-    //ArangoDB migration
     val arangoDBProps = Map("blueprints.arangodb.host" -> "localhost",
       "blueprints.arangodb.port" -> "8529",
       "blueprints.arangodb.db" -> "test",
