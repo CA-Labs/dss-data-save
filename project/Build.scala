@@ -27,6 +27,7 @@ object MyBuild extends Build {
         "com.tinkerpop.blueprints" % "blueprints-core" % "2.6.0",
         "com.tinkerpop.blueprints" % "blueprints-neo4j2-graph" % "2.6.0",
         "com.thinkaurelius.titan" % "titan-core" % "0.5.2",
+        "com.google.guava" %  "guava" % "15.0" force(), // see this issue: https://groups.google.com/forum/#!topic/aureliusgraphs/vQ90mchs62s
         "com.tinkerpop.blueprints" % "blueprints-arangodb-graph" % "1.0.10-SNAPSHOT",
         "com.calabs" %% "dss-data-import" % "0.0.1-SNAPSHOT"
       ),

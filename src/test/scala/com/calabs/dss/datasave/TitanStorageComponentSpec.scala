@@ -84,13 +84,13 @@ class TitanStorageComponentSpec extends FunSpec with BeforeAndAfter with BeforeA
 
   describe("Titan Storage Component") {
 
-    ignore("should be able to detect missing graph properties"){
+    it("should be able to detect missing graph properties"){
       intercept[IllegalArgumentException]{
         new ArangoDB(koProps)
       }
     }
 
-    ignore("should be able to save nodes and edges"){
+    it("should be able to save nodes and edges"){
       val storedVertices = graph.query.vertices.toList
       val storedEdges = graph.query.edges.toList
       assert(storedVertices.length == 2 && storedEdges.length == 1)
@@ -103,7 +103,7 @@ class TitanStorageComponentSpec extends FunSpec with BeforeAndAfter with BeforeA
       assert(edgeC.length == 1)
     }
 
-    ignore("should be able to update nodes and edges"){
+    it("should be able to update nodes and edges"){
       val storedVertices = graph.query.vertices.toList
       val storedEdges = graph.query.edges.toList
       assert(storedVertices.length == 2 && storedEdges.length == 1)

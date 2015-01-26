@@ -315,8 +315,7 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
 class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent {
 
   private[this] val titanPrefix = "titan."
-  private[this] val titanConfPrefix = "conf."
-  private[this] val confPrefix = blueprintsConfPrefix ++ titanPrefix ++ titanConfPrefix
+  private[this] val confPrefix = blueprintsConfPrefix ++ titanPrefix
 
   private [this] object Props {
     val DIRECTORY = "storage.directory"
@@ -346,7 +345,7 @@ class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent
         val titanConfiguration = new BaseConfiguration()
         titanConfiguration.addProperty(Props.DIRECTORY, props.get(requiredProps.get(Props.DIRECTORY)).get)
         titanConfiguration.addProperty(Props.BACKEND, props.get(requiredProps.get(Props.BACKEND)).get)
-        props.filter{case (k,v) => k.startsWith(titanConfPrefix)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(titanConfPrefix, ""), v)}
+        props.filter{case (k,v) => k.startsWith(confPrefix) && !requiredProps.contains(k)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(confPrefix, ""), v)}
         TitanFactory.open(titanConfiguration)
       }
     }
