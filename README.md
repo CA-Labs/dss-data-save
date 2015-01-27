@@ -28,9 +28,9 @@ One of the most prominent use cases apart for the MODAClouds context is to provi
 
 ##Concept
 
-DSS Data Save module is designed to consume standard input in JSON format. Within the current implementation the module is capable on saving the data to [Blueprints](https://github.com/tinkerpop/blueprints/wiki) capable graph databases. This functionality can be easily extended as the interfaces are designed in a generic fashion.<br><br>
+DSS Data Save module is designed to consume standard input in JSON format. Within the current implementation the module is capable on saving the data to [Blueprints](https://github.com/tinkerpop/blueprints/wiki) capable graph databases. This functionality can be easily extended as the interfaces are designed in a generic fashion.<br>
 
-As the DSS for the MODAClouds project was designed on top of [ArangoDB](https://www.arangodb.com) database, most of the testing was performed using this default back end. The currently supported graph database backends are [ArangoDB](https://www.arangodb.com), [Neo4j](http://neo4j.com) and [Titan](http://s3.thinkaurelius.com/docs/titan/current/) and each of these may require different configuration parameters.<br><br>
+As the DSS for the MODAClouds project was designed on top of [ArangoDB](https://www.arangodb.com) database, most of the testing was performed using this default back end. The currently supported graph database backends are [ArangoDB](https://www.arangodb.com), [Neo4j](http://neo4j.com) and [Titan](http://s3.thinkaurelius.com/docs/titan/current/) and each of these may require different configuration parameters.<br>
 
 JSON input should consist of two main sections: 
 
