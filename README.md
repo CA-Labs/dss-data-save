@@ -79,7 +79,7 @@ Each vertex is represented by a set of key/values following the [graph property 
 }
 ```
 
-This example would try an *update* on field `value` (setting its property `value` to value `2`) for a  vertex which would be retrieved from a lookup by `name` and `surname` fields (if multiple vertices match this query, the update is only applied to the first one, so please **be sure** lookup criteria match exactly one vertex e.g. query by some unique field). On the other hand, the following example would mean an *insert* action:
+This example would try an *update* on field `value` (setting its property `value` to value `2`) for a  vertex which would be retrieved from a lookup by `name` field (if multiple vertices match this query, the update is only applied to the first one, so please **be sure** lookup criteria match exactly one vertex e.g. query by some unique field). On the other hand, the following example would mean an *insert* action:
 
 ```json
 {
@@ -94,13 +94,13 @@ Same logic applies to edges obects with two concrete particularities, **`__from`
 
 ```json
 {
-    "property": "C"
+    "property": "C",
     "__from": {
         "name": "A"
-    }
+    },
     "__to": {
         "name": "B"
-    }
+    },
     "label": "CONNECTED_TO"
 }
 ```
@@ -111,13 +111,13 @@ In the example above, we would query first two vertices (one with `name` equal t
 
 ```json
 {
-    "__property": "newC"
+    "__property": "newC",
     "__from": {
         "name": "A"
-    }
+    },
     "__to": {
         "name": "B"
-    }
+    },
     "label": "CONNECTED_TO"
 }
 ```
@@ -129,19 +129,19 @@ As commented above, this tools expects the JSON input from standard input and re
 * `-p` or `--properties`: the path to the file containing the concrete underlying graph database options in a key/value fashion.
 
 Regarding graph database properties, they should follow some specification. We should distinguish between required and optional options:
-* Required options will always start with `blueprints.{backend}.{requiredProperty}::{value}` where `{backend} is the chosen underlying graph database, `{requiredProperty}` is a **required** property for such database and **{value}** is the value set for such property.
-* Optional options will always start with `blueprints.{backend}.conf.{optionalProperty}::{value} where `{backend}` is the chosen underlying graph database, `{optionalProperty} is an **optional** property for such database and **{value}** is the value set for such property.
+* Required options will always start with `blueprints.{backend}.{requiredProperty}` where `{backend}` is the chosen underlying graph database, and `{requiredProperty}` is a **required** property for such database.
+* Optional options will always start with `blueprints.{backend}.conf` where `{backend}` is the chosen underlying graph database and `{optionalProperty} is an **optional** property for such database.
 
 The following list specifies which properties are mandatory and which ones are optional:
 * ArangoDB:
-    * **Required**: `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
-    * **Optional**: see custom [ArangoDB options]().
+    * **Required** (*blueprints.arangodb.*): `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
+    * **Optional** (*blueprints.arangodb.conf.*): see custom [ArangoDB options]().
 * Neo4j:
-    * **Required**: `directory`
-    * **Optional**: see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
+    * **Required** (*blueprints.neo4j.*): `directory`
+    * **Optional** (*blueprints.neo4j.conf.*): see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
 * Titan
-    * **Required**: `storage.backend`, `storage.directory`
-    * **Optional**: see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
+    * **Required** (*blueprints.titan.*): `storage.backend`, `storage.directory`
+    * **Optional** (*blueprints.titan.conf.*): see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
 
 ## Other comments
 
