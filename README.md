@@ -2,9 +2,9 @@
 
 ##Overview
 
-In the context of a project funded by the European Union called MODAClouds ([www.modaclouds.eu](http://modaclouds.eu)), part of the project objective was to design a Decision Support System to analyze offerings of different cloud provider and compare them across different dimensions.<br><br> 
+In the context of a project funded by the European Union called MODAClouds ([www.modaclouds.eu](http://modaclouds.eu)), part of the project objective was to design a Decision Support System to analyze offerings of different cloud provider and compare them across different dimensions.<br>
 
-Data Save module is part of the data gathering process of the MODAClouds DSS. This module is designed as a standalone CLI based application and can be implemented across different types of uses, not necessary connected to the Cloud Service providers scenario.<br><br>
+Data Save module is part of the data gathering process of the MODAClouds DSS. This module is designed as a standalone CLI based application and can be implemented across different types of uses, not necessary connected to the Cloud Service providers scenario.<br>
 
 One of the most prominent use cases apart for the MODAClouds context is to provide a subsystem of migration of the data between different types of the databases with possibility to "graphiphy" the dataset in order to explore graph exploration mechanisms to analyze the data. 
 
@@ -134,14 +134,14 @@ Regarding graph database properties, they should follow some specification. We s
 
 The following list specifies which properties are mandatory and which ones are optional:
 * ArangoDB:
-    * **Required** (*blueprints.arangodb.*): `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
-    * **Optional** (*blueprints.arangodb.conf.*): see custom [ArangoDB options]().
+    * **Required** (*blueprints.arangodb.\**): `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
+    * **Optional** (*blueprints.arangodb.conf.\**): see custom [ArangoDB options]().
 * Neo4j:
-    * **Required** (*blueprints.neo4j.*): `directory`
-    * **Optional** (*blueprints.neo4j.conf.*): see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
+    * **Required** (*blueprints.neo4j.\**): `directory`
+    * **Optional** (*blueprints.neo4j.conf.\**): see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
 * Titan
-    * **Required** (*blueprints.titan.*): `storage.backend`, `storage.directory`
-    * **Optional** (*blueprints.titan.conf.*): see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
+    * **Required** (*blueprints.titan.\**): `storage.backend`, `storage.directory`
+    * **Optional** (*blueprints.titan.conf.\**): see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
 
 ## Other comments
 
