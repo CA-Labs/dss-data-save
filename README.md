@@ -90,7 +90,7 @@ This example would try an *update* on field `value` (setting its property `value
 
 ### Edges
 
-Same logic applies to edges obects with two concrete particularities, **`__from`** / **`__to`** fields and **`label`** field. For instance, the following example would indicate an insert action has to be carried out:
+Same logic applies to edges objects with two concrete particularities, **`__from`** / **`__to`** and **`label`** fields. For instance, the following example would indicate an *insert* action has to be carried out:
 
 ```json
 {
@@ -105,7 +105,7 @@ Same logic applies to edges obects with two concrete particularities, **`__from`
 }
 ```
 
-**`__from`** and **`__to`** fields are again a set of key/values which are used to uniquely identify two vertices and create a relationship between them with a certain **`label`**. Hence, this `label` value must be also specified (depending on the Blueprints implementation, it can be an empty string but we encourage you to use meaningful values).<br><br>
+**`__from`** and **`__to`** fields are again a set of key/values which are used to uniquely identify two vertices and create a relationship between them with a certain **`label`**. Hence, this `label` value must be also specified (depending on the Blueprints implementation, it can be an empty string but we encourage you to use meaningful values).<br>
 
 In the example above, we would query first two vertices (one with `name` equal to "A" and the other one with `name` equal to "B" and create a new edge between them with a `label` called "CONNECTED_TO" and a property `property` with value "C". For updates, any field other than **`__from`**, **`__to`** and **`label`** can be marked properly (in this case, property `property` would be updated):
 
@@ -124,24 +124,24 @@ In the example above, we would query first two vertices (one with `name` equal t
 
 ## Instructions
 
-As commented above, this tools expects the JSON input from standard input and requires to options:
+As commented above, this tool expects the JSON input from stdin and requires two options:
 * `-d` or `--db`: the backend used for the data graph storage. Current supported options are `arangodb`, `neo4j` and `titan`.
-* `-p` or `--properties`: the path to the file containing the concrete underlying graph database options in a key/value fashion.
+* `-p` or `--properties`: the absolute path to the file containing the concrete underlying graph database options in a key/value fashion.
 
-Regarding graph database properties, they should follow some specification. We should distinguish between required and optional options:
-* Required options will always start with `blueprints.{backend}.{requiredProperty}` where `{backend}` is the chosen underlying graph database, and `{requiredProperty}` is a **required** property for such database.
-* Optional options will always start with `blueprints.{backend}.conf` where `{backend}` is the chosen underlying graph database and `{optionalProperty} is an **optional** property for such database.
+Regarding graph database properties, they should follow some specification. We should distinguish between **required** and **optional** options:
+* **Required** options will always start with `blueprints.{backend}.{requiredProperty}` where `{backend}` is the chosen underlying graph database, and `{requiredProperty}` is a **required** property for such database.
+* **Optional** options will always start with `blueprints.{backend}.conf` where `{backend}` is the chosen underlying graph database and `{optionalProperty} is an **optional** property for such database.
 
-The following list specifies which properties are mandatory and which ones are optional:
+The following list specifies which properties are mandatory and which ones are optional for each currently supported graph database:
 * ArangoDB:
-    * **Required** (*blueprints.arangodb.\**): `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
+    * **Required** (*blueprints.arangodb.**): `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
     * **Optional** (*blueprints.arangodb.conf.\**): see custom [ArangoDB options]().
 * Neo4j:
-    * **Required** (*blueprints.neo4j.\**): `directory`
-    * **Optional** (*blueprints.neo4j.conf.\**): see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
+    * **Required** (*blueprints.neo4j.**): `directory`
+    * **Optional** (*blueprints.neo4j.conf.**): see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
 * Titan
-    * **Required** (*blueprints.titan.\**): `storage.backend`, `storage.directory`
-    * **Optional** (*blueprints.titan.conf.\**): see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
+    * **Required** (*blueprints.titan.**): `storage.backend`, `storage.directory`
+    * **Optional** (*blueprints.titan.conf.**): see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
 
 ## Other comments
 
