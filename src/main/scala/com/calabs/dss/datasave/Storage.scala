@@ -4,6 +4,7 @@ import com.calabs.dss.dataimport.Parsing.Tags
 import com.calabs.dss.dataimport.{Parsing, Edge, Vertex, Document}
 import com.calabs.dss.datasave.GraphStorageComponent.{Neo4jComponent, TitanComponent, ArangoDBComponent}
 import com.thinkaurelius.titan.core.TitanFactory
+import com.thinkaurelius.titan.core.schema.TitanConfiguration
 import com.tinkerpop.blueprints.Graph
 import com.tinkerpop.blueprints.impls.arangodb.{ArangoDBGraphQuery, ArangoDBGraph}
 import com.tinkerpop.blueprints.impls.arangodb.client.ArangoDBConfiguration
@@ -313,17 +314,24 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
 
 class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent {
 
-  private[this] val titanConf = "blueprints.titan.conf."
+  private[this] val titanPrefix = "titan."
+  private[this] val confPrefix = blueprintsConfPrefix ++ titanPrefix
 
   private [this] object Props {
-
+    val DIRECTORY = "storage.directory"
+    val BACKEND = "storage.backend"
   }
 
-  private[this] val requiredProps = List().map(prop => blueprintsConfPrefix ++ prop)
+  private[this] val requiredProps = List(Props.DIRECTORY, Props.BACKEND).map(prop => (prop, blueprintsConfPrefix ++ titanPrefix ++ prop)).toMap
 
-  override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop))
+  // Drops Blueprints related properties so that only exclusive vendor db properties are left
+  private[this] def getTitanProps : Map[String, String] = {
+    props.filter(prop => !requiredProps.containsValue(prop._1))
+  }
 
-  override def checkConfigProps: Boolean = props.forall(prop => prop._1.startsWith(titanConf))
+  override def checkRequiredProps: Boolean = requiredProps.forall(prop => props.contains(prop._2))
+
+  override def checkConfigProps: Boolean = getTitanProps.forall(prop => prop._1.startsWith(confPrefix))
 
   // Graph initialization
   val requiredPropsOk = checkRequiredProps
@@ -331,13 +339,19 @@ class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent
 
   val graph = Try(
     {
-      if (!requiredPropsOk) throw new IllegalArgumentException(s"Wrong required parameters for ArangoDB storage component. The following parameters are required: $requiredProps.")
-      else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for ArangoDB storage component. Please do check they all start with $titanConf.")
-      else TitanFactory.open(props)
+      if (!requiredPropsOk) throw new IllegalArgumentException(s"Wrong required parameters for Titan storage component. The following parameters are required: $requiredProps.")
+      else if(!configPropsOk) throw new IllegalArgumentException(s"Wrong configuration parameters for Titan storage component. Please do check they all start with $confPrefix.")
+      else {
+        val titanConfiguration = new BaseConfiguration()
+        titanConfiguration.addProperty(Props.DIRECTORY, props.get(requiredProps.get(Props.DIRECTORY)).get)
+        titanConfiguration.addProperty(Props.BACKEND, props.get(requiredProps.get(Props.BACKEND)).get)
+        props.filter{case (k,v) => k.startsWith(confPrefix) && !requiredProps.contains(k)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(confPrefix, ""), v)}
+        TitanFactory.open(titanConfiguration)
+      }
     }
   ) match {
     case Success(graph) => graph
-    case Failure(e) => throw new IllegalArgumentException(s"Some error occurred when trying to instantiate an ArangoDB graph: ${e.getMessage}")
+    case Failure(e) => throw new IllegalArgumentException(s"Some error occurred when trying to instantiate an Titan graph: ${e.getMessage}")
   }
 
 }
