@@ -71,11 +71,51 @@ object DSSDataSave {
                   case _ => throw new IllegalArgumentException(s"Wrong edge: $edge")
                 })
                 // Close graph
-                graph.shutdown()
+                graph.shutdown
               }
-              case Storage.Db.Neo4j => throw new UnsupportedOperationException(s"Neo4j is not supported yet!")
-              case Storage.Db.Titan => throw new UnsupportedOperationException(s"Titan is not supported yet!")
-              case _ => throw new UnsupportedOperationException(s"Unsupported database backend")
+              case Storage.Db.Neo4j => {
+                val neo4j = new Neo4j(props)
+                // Neo4j supports transactional graph
+                implicit val graph = neo4j.graph
+                // Save vertices
+                j.vertices.arr.foreach(vertex => vertex match {
+                  case JObject(props) => neo4j.saveDocument(Vertex(props.toMap))
+                  case _ => throw new IllegalArgumentException(s"Wrong vertex: $vertex")
+                })
+                // Commit node changes
+                graph.commit
+                // Save edges
+                j.edges.arr.foreach(edge => edge match {
+                  case JObject(props) => neo4j.saveDocument(Edge(props.toMap))
+                  case _ => throw new IllegalArgumentException(s"Wrong edge: $edge")
+                })
+                // Commit edge changes
+                graph.commit
+                // Close graph
+                graph.shutdown
+              }
+              case Storage.Db.Titan => {
+                val titan = new Titan(props)
+                // Titan supports transactional graph
+                implicit val graph = titan.graph
+                // Save vertices
+                j.vertices.arr.foreach(vertex => vertex match {
+                  case JObject(props) => titan.saveDocument(Vertex(props.toMap))
+                  case _ => throw new IllegalArgumentException(s"Wrong vertex: $vertex")
+                })
+                // Commit node changes
+                graph.commit
+                // Save edges
+                j.edges.arr.foreach(edge => edge match {
+                  case JObject(props) => titan.saveDocument(Edge(props.toMap))
+                  case _ => throw new IllegalArgumentException(s"Wrong edge: $edge")
+                })
+                // Commit edge changes
+                graph.commit
+                // Close graph
+                graph.shutdown
+              }
+              case unsupportedDb => Serialization.write(List(("error" -> true), ("reason" -> s"Unsupported database backend $unsupportedDb")).toMap)
             }
           }
           case (Failure(e), _) => Serialization.write(List(("exception" -> true), ("reason" -> s"Invalid input: ${e.getMessage}")).toMap)
