@@ -17,3 +17,6 @@ project/plugins/project/
 .worksheet
 .idea
 .idea_modules
+
+# ignore vim swp files
+*.swp
