@@ -25,7 +25,7 @@ trait ArangoDBConfig {
                     "blueprints.arangodb.db" -> "test",
                     "blueprints.arangodb.name" -> "testGraph",
                     "blueprints.arangodb.verticesCollectionName" -> "testVertices",
-                    "blueprints.arangodb.edgesCollectionName" -> "edgesTest")
+                    "blueprints.arangodb.edgesCollectionName" -> "testEdges")
   val koProps = Map[String,String]()
   val arangoDbClient = new ArangoDB(okProps)
   // Seems implicit graph declaration is not found within ArangoDB class, make it explicit

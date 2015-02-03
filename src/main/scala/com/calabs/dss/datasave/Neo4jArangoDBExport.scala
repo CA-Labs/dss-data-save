@@ -31,7 +31,7 @@ object Neo4jArangoDBExport {
       "blueprints.arangodb.db" -> "test",
       "blueprints.arangodb.name" -> "testGraph",
       "blueprints.arangodb.verticesCollectionName" -> "testVertices",
-      "blueprints.arangodb.edgesCollectionName" -> "edgesTest")
+      "blueprints.arangodb.edgesCollectionName" -> "testEdges")
     val arangoDbClient = new ArangoDB(arangoDBProps)
     val arangoDbGraph = arangoDbClient.graph
 
