@@ -4,9 +4,9 @@ import com.calabs.dss.dataimport.Parsing.Tags
 import com.calabs.dss.dataimport.{Parsing, Edge, Vertex, Document}
 import com.calabs.dss.datasave.GraphStorageComponent.{Neo4jComponent, TitanComponent, ArangoDBComponent}
 import com.thinkaurelius.titan.core.TitanFactory
-import com.thinkaurelius.titan.core.schema.TitanConfiguration
+
 import com.tinkerpop.blueprints.Graph
-import com.tinkerpop.blueprints.impls.arangodb.{ArangoDBGraphQuery, ArangoDBGraph}
+import com.tinkerpop.blueprints.impls.arangodb.{ArangoDBGraph}
 import com.tinkerpop.blueprints.impls.arangodb.client.ArangoDBConfiguration
 import com.tinkerpop.blueprints.impls.neo4j2.Neo4j2Graph
 
@@ -15,6 +15,7 @@ import org.json4s.JsonAST._
 
 import scala.util.{Failure, Success, Try}
 import collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 import com.tinkerpop.blueprints.{Vertex => BlueprintsVertex, Edge => BlueprintsEdge}
 
@@ -65,9 +66,11 @@ sealed trait StorageComponent {
     conf
   }
 
-  def handleBigs(value: Any) = value match {
+  def asJavaRecursive(value: Any) : Any = value match {
     case bi: BigInt => bi.toDouble
     case bd: BigDecimal => bd.toDouble
+    case array: List[Any] => array.map(x => asJavaRecursive(x)).asJava // blueprints impls only deal with java collections
+    case map: Map[String,Any] => map.mapValues(x => asJavaRecursive(x)).asJava // blueprints impls only deal with java collections
     case _ => value
   }
 
@@ -127,12 +130,12 @@ sealed trait GraphStorageComponent extends StorageComponent {
           case v: Vertex => {
             val vertexId = getVerticesByMultipleCriteria(lookupCriteria._1).head.getId
             val retrievedVertex = graph.getVertex(vertexId)
-            lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case (k,v) => retrievedVertex.setProperty(k, handleBigs(v.values))}
+            lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case (k,v) => retrievedVertex.setProperty(k, asJavaRecursive(v.values))}
           }
           case e: Edge => {
             val edgeId = getEdgesByMultipleCriteria(lookupCriteria._1).head.getId
             val retrievedEdge = graph.getEdge(edgeId)
-            lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case(k,v) => retrievedEdge.setProperty(k, handleBigs(v.values))}
+            lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case(k,v) => retrievedEdge.setProperty(k, asJavaRecursive(v.values))}
           }
         }
       } else {
@@ -140,7 +143,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
         doc match {
           case v: Vertex => {
             val vertex = graph.addVertex(null)
-            v.props.foreach{case (k,v) => vertex.setProperty(k, handleBigs(v.values))}
+            v.props.foreach{case (k,v) => vertex.setProperty(k, asJavaRecursive(v.values))}
           }
           case e: Edge => {
             // For edges, we need related vertices id's so first we have to grab them
@@ -172,7 +175,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
             val edge = graph.addEdge(null, fromVertex, toVertex, label)
 
             e.props.filter{case (k,v) => k != Tags.FROM && k != Tags.TO && k != Tags.LABEL}
-              .foreach{case(k,v) => edge.setProperty(k, handleBigs(v.values))}
+              .foreach{case(k,v) => edge.setProperty(k, asJavaRecursive(v.values))}
           }
         }
       }
@@ -187,7 +190,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
     def getVerticesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : Iterable[BlueprintsVertex] = {
       // TODO: Index usage?
       val query = graph.query()
-      criteria.foreach{ case (k,v) => query.has(k, handleBigs(v.values)) }
+      criteria.foreach{ case (k,v) => query.has(k, asJavaRecursive(v.values)) }
       query.vertices()
     }
 
