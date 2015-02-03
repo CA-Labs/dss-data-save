@@ -1,0 +1,6 @@
+blueprints.arangodb.host::localhost
+blueprints.arangodb.port::8529
+blueprints.arangodb.db::test
+blueprints.arangodb.name::testGraph
+blueprints.arangodb.verticesCollectionName::testVertices
+blueprints.arangodb.edgesCollectionName::testEdges

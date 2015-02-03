@@ -96,9 +96,9 @@ class TitanStorageComponentSpec extends FunSpec with BeforeAndAfter with BeforeA
       assert(storedVertices.length == 2 && storedEdges.length == 1)
 
       val nodeA = graph.query().has("name", "A").vertices().toList
-      assert(nodeA.length == 1 && nodeA(0).getProperty[Double]("value") == 1)
+      assert(nodeA.length == 1 && nodeA(0).getProperty[Int]("value") == 1)
       val nodeB = graph.query().has("name", "B").vertices().toList
-      assert(nodeB.length == 1 && nodeB(0).getProperty[Double]("value") == 2)
+      assert(nodeB.length == 1 && nodeB(0).getProperty[Int]("value") == 2)
       val edgeC = graph.query().has("name", "C").edges().toList
       assert(edgeC.length == 1)
     }
@@ -110,9 +110,9 @@ class TitanStorageComponentSpec extends FunSpec with BeforeAndAfter with BeforeA
 
       // Grab references to vertices/edges ids
       val nodeA = graph.query().has("name", "A").vertices().toList
-      assert(nodeA.length == 1 && nodeA(0).getProperty[Double]("value") == 1)
+      assert(nodeA.length == 1 && nodeA(0).getProperty[Int]("value") == 1)
       val nodeB = graph.query().has("name", "B").vertices().toList
-      assert(nodeB.length == 1 && nodeB(0).getProperty[Double]("value") == 2)
+      assert(nodeB.length == 1 && nodeB(0).getProperty[Int]("value") == 2)
       val edgeC = graph.query().has("name", "C").edges().toList
       assert(edgeC.length == 1)
 

@@ -115,11 +115,11 @@ object DSSDataSave {
                 // Close graph
                 graph.shutdown
               }
-              case unsupportedDb => Serialization.write(List(("error" -> true), ("reason" -> s"Unsupported database backend $unsupportedDb")).toMap)
+              case unsupportedDb => println(Serialization.write(List(("error" -> true), ("reason" -> s"Unsupported database backend $unsupportedDb")).toMap))
             }
           }
-          case (Failure(e), _) => Serialization.write(List(("exception" -> true), ("reason" -> s"Invalid input: ${e.getMessage}")).toMap)
-          case (_, Failure(e)) => Serialization.write(List(("error" -> true), ("reason" -> s"Invalid database properties: ${e.getMessage}")).toMap)
+          case (Failure(e), _) => println(Serialization.write(List(("exception" -> true), ("reason" -> s"Invalid input: ${e.getMessage}")).toMap))
+          case (_, Failure(e)) => println(Serialization.write(List(("error" -> true), ("reason" -> s"Invalid database properties: ${e.getMessage}")).toMap))
         }
       }
     }

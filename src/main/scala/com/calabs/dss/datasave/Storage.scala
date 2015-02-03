@@ -67,7 +67,7 @@ sealed trait StorageComponent {
   }
 
   def asJavaRecursive(value: Any) : Any = value match {
-    case bi: BigInt => bi.toDouble
+    case bi: BigInt => bi.toInt
     case bd: BigDecimal => bd.toDouble
     case array: List[Any] => array.map(x => asJavaRecursive(x)).asJava // blueprints impls only deal with java collections
     case map: Map[String,Any] => map.mapValues(x => asJavaRecursive(x)).asJava // blueprints impls only deal with java collections
@@ -128,12 +128,20 @@ sealed trait GraphStorageComponent extends StorageComponent {
         // This is an update
         doc match {
           case v: Vertex => {
-            val vertexId = getVerticesByMultipleCriteria(lookupCriteria._1).head.getId
+            val verticesFound = getVerticesByMultipleCriteria(lookupCriteria._1)
+            val vertexId = verticesFound match {
+              case head::tail => head.getId
+              case _ => throw new NoSuchElementException(s"No vertices matching criteria ${lookupCriteria._1} were found, exitting...")
+            }
             val retrievedVertex = graph.getVertex(vertexId)
             lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case (k,v) => retrievedVertex.setProperty(k, asJavaRecursive(v.values))}
           }
           case e: Edge => {
-            val edgeId = getEdgesByMultipleCriteria(lookupCriteria._1).head.getId
+            val edgesFound = getEdgesByMultipleCriteria(lookupCriteria._1)
+            val edgeId = edgesFound match {
+              case head::tail => head.getId
+              case _ => throw new NoSuchElementException(s"No edges matching criteria ${lookupCriteria._1} were found, exitting...")
+            }
             val retrievedEdge = graph.getEdge(edgeId)
             lookupCriteria._2.map{case (k,v) => (k.replace(Tags.SEARCHABLE_CRITERIA, ""),v)}.foreach{case(k,v) => retrievedEdge.setProperty(k, asJavaRecursive(v.values))}
           }
@@ -161,8 +169,18 @@ sealed trait GraphStorageComponent extends StorageComponent {
               }
               case None => throw new IllegalArgumentException(s"Missing ${Tags.FROM} property in edge document")
             }
-            val fromVertex = getVerticesByMultipleCriteria(fromCriteria).head
-            val toVertex = getVerticesByMultipleCriteria(toCriteria).head
+            val fromVerticesFound = getVerticesByMultipleCriteria(fromCriteria)
+            val fromVertex = fromVerticesFound match {
+              case head :: Nil => head
+              case head :: tail => throw new IllegalArgumentException(s"Invalid from criteria $fromCriteria (more than one matching vertex was found)")
+              case _ => throw new IllegalArgumentException(s"Invalid from criteria $fromCriteria (no matching vertex was found)")
+            }
+            val toVerticesFound = getVerticesByMultipleCriteria(toCriteria)
+            val toVertex = toVerticesFound match {
+              case head :: Nil => head
+              case head :: tail => throw new IllegalArgumentException(s"Invalid to criteria $toCriteria (more than one matching vertex was found)")
+              case _ => throw new IllegalArgumentException(s"Invalid to criteria $toCriteria (no matching vertex was found)")
+            }
 
             // Neo4j impl requires label to be present when creating the edge
             val label = e.props.get(Tags.LABEL) match {
@@ -187,11 +205,11 @@ sealed trait GraphStorageComponent extends StorageComponent {
      * @param graph The graph used for querying.
      * @return
      */
-    def getVerticesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : Iterable[BlueprintsVertex] = {
+    def getVerticesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : List[BlueprintsVertex] = {
       // TODO: Index usage?
       val query = graph.query()
       criteria.foreach{ case (k,v) => query.has(k, asJavaRecursive(v.values)) }
-      query.vertices()
+      query.vertices().toList
     }
 
     /**
@@ -200,11 +218,11 @@ sealed trait GraphStorageComponent extends StorageComponent {
      * @param graph The graph used for querying.
      * @return
      */
-    def getEdgesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : Iterable[BlueprintsEdge] = {
+    def getEdgesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : List[BlueprintsEdge] = {
       // TODO: Index usage?
       val query = graph.query()
-      criteria.foreach{ case (k,v) => query.has(k, v.values) }
-      query.edges()
+      criteria.foreach{ case (k,v) => query.has(k, asJavaRecursive(v.values)) }
+      query.edges().toList
     }
 
   }
