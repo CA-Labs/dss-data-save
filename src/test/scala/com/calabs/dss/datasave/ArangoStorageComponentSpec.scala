@@ -35,7 +35,6 @@ trait ArangoDBConfig {
 class ArangoStorageComponentSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with ArangoDBConfig {
 
   val jsonStringInsert = Source.fromFile(getClass.getResource("/arangodb/basic-insert.json").getPath).mkString
-//  val jsonStringInsert = Source.fromFile(getClass.getResource("/github.json").getPath).mkString
   val jsonStringUpdate = Source.fromFile(getClass.getResource("/arangodb/basic-update.json").getPath).mkString
   implicit val formats = DefaultFormats
   val inputInsert = read[InputData](jsonStringInsert)

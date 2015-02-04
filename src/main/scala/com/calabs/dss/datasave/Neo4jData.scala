@@ -33,7 +33,7 @@ object Neo4jData {
       val props = vertex.getPropertyKeys
       val map = MutableMap.empty[String,Any]
       props.foreach(key => map.update(key, vertex.getProperty(key)))
-      map.update("someId", vertex.getId)
+      map.update("id", vertex.getId)
       map.toMap
     })
 
@@ -42,8 +42,8 @@ object Neo4jData {
       val map = MutableMap.empty[String,Any]
       props.foreach(key => map.update(key, edge.getProperty(key)))
       map.update("label", edge.getLabel)
-      map.update("__from", Map("someId" -> edge.getVertex(Direction.OUT).getId))
-      map.update("__to", Map("someId" -> edge.getVertex(Direction.IN).getId))
+      map.update("__from", Map("id" -> edge.getVertex(Direction.OUT).getId))
+      map.update("__to", Map("id" -> edge.getVertex(Direction.IN).getId))
       map.toMap
     })
 

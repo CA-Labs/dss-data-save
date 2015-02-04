@@ -57,6 +57,32 @@ sealed trait StorageComponent {
   def checkRequiredProps : Boolean
   def checkConfigProps : Boolean
 
+  /**
+   * Remaps [[Tags.ID]] keys to [[Tags.IMPORT_ID]] over [[Document]] keys.
+   * @param doc The [[Document]] whose [[Tags.ID]] keys have to be remapped.
+   * @return
+   */
+  def remapDocumentProps(doc: Document): Document = {
+    def recursiveRemap(props: Map[String, JValue]) : Map[String, JValue] = props.map{case (k,v) => {
+      if (k == Tags.ID) {
+        v match {
+          case o: JObject => (Tags.IMPORT_ID, JObject(recursiveRemap(o.obj.toMap).toList))
+          case _ => (Tags.IMPORT_ID, v)
+        }
+      } else {
+        v match {
+          case o: JObject => (k, JObject(recursiveRemap(o.obj.toMap).toList))
+          case _ => (k, v)
+        }
+      }
+    }}
+
+    doc match {
+      case v: Vertex => Vertex(recursiveRemap(v.props))
+      case e: Edge => Edge(recursiveRemap(e.props))
+    }
+  }
+
   // Handy implicits used when getting property values from properties map
   implicit def optionString2String(value: Option[String]) = value.get
   implicit def optionString2Int(value: Option[String]) = value.get.toInt
@@ -110,7 +136,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
      * @param graph Implicit graph instance which depends on the underlying graph db implementation used.
      * @return
      */
-    def saveDocument(doc: Document)(implicit graph: Graph) : Unit = doc match {
+    def saveDocument(doc: Document)(implicit graph: Graph) : Unit = remapDocumentProps(doc) match {
       case v: Vertex => insertOrUpdate(v)
       case e: Edge => insertOrUpdate(e)
       case _ => throw new IllegalArgumentException(s"Neo4j can only handle either vertices or edges document types")
