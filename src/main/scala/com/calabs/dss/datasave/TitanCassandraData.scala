@@ -18,7 +18,8 @@ object TitanCassandraData {
   def main(args: Array[String]) : Unit = {
 
     // Neo4j data to data-input-like JSON
-    val titanProps = Map("blueprints.titan.storage.directory" -> "/Users/jaranda/cassandra/drwho-migration", "blueprints.titan.storage.backend" -> "cassandra")
+    val titanProps = Map("blueprints.titan.storage.directory" -> "/Users/jaranda/cassandra/drwho-migration",
+      "blueprints.titan.storage.backend" -> "cassandra")
     val titanClient = new Titan(titanProps)
     implicit val titanGraph = titanClient.graph
 

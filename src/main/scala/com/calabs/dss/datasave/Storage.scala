@@ -394,7 +394,7 @@ class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent
         val titanConfiguration = new BaseConfiguration()
         titanConfiguration.addProperty(Props.DIRECTORY, props.get(requiredProps.get(Props.DIRECTORY)).get)
         titanConfiguration.addProperty(Props.BACKEND, props.get(requiredProps.get(Props.BACKEND)).get)
-        props.filter{case (k,v) => k.startsWith(confPrefix) && !requiredProps.contains(k)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(titanConfPrefix, ""), v)}
+        props.filter{case (k,v) => k.startsWith(confPrefix) && !requiredProps.contains(k)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(confPrefix, ""), v)}
         TitanFactory.open(titanConfiguration)
       }
     }

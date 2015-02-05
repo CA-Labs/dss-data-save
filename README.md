@@ -56,10 +56,12 @@ Example of the input:
     ],
     "vertices": [
         {
+            "import_id": 1,
             "name": "A",
             "value": 1
         },
         {
+            "import_id": 2,
             "name": "B",
             "value": 2
         }
@@ -67,47 +69,49 @@ Example of the input:
 }
 ```
 
-We should distinguish between `vertices` and `edges` arrays and the keys these objects use.
-
 ### Vertices
-Each vertex is represented by a set of key/values following the [graph property model](https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model) specification. Keys starting with **`__`** string are meant to indicate an update action has to be carried out on that particular document. For instance:
+Each vertex is represented by a set of key/values following the [graph property model](https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model) specification. Keys starting with `__` string are meant to indicate an update action has to be carried out on that particular document. For instance:
 
 ```json
 {
+    "import_id": 1,
     "name": "A",
     "__value": 2
 }
 ```
 
-This example would try an *update* on field `value` (setting its property `value` to value `2`) for a  vertex which would be retrieved from a lookup by `name` field (if multiple vertices match this query, the update is only applied to the first one, so please **be sure** lookup criteria match exactly one vertex e.g. query by some unique field). On the other hand, the following example would mean an *insert* action:
+This example would try an *update* on field `value` (setting its property `value` to value `2`) for a  vertex which would be retrieved from a lookup by `name` field (if multiple vertices match this query, an error is returned and changes are rolled back). Please **be sure** lookup criteria match exactly one vertex e.g. query by some unique field). On the other hand, the following example would mean an *insert* action:
 
 ```json
 {
+    "import_id": 1,
     "name": "A",
     "value": 2
 }
 ```
 
+All vertices must have an `import_id` property which represents the vertex identifier. This identifier will be stored as vertex property since not all graph databases manage document identifiers in the same way (for instance, Neo4j does not allow to specify a vertex/edge identifier but uses an auto-increment approach).
+
 ### Edges
 
-Same logic applies to edges objects with two concrete particularities, **`__from`** / **`__to`** and **`label`** fields. For instance, the following example would indicate an *insert* action has to be carried out:
+Same logic applies to edges objects with two concrete particularities, `__from` / `__to` and `label` fields. For instance, the following example would indicate an *insert* action has to be carried out:
 
 ```json
 {
     "property": "C",
     "__from": {
-        "name": "A"
+        "import_id": 1
     },
     "__to": {
-        "name": "B"
+        "import_id": 2
     },
     "label": "CONNECTED_TO"
 }
 ```
 
-**`__from`** and **`__to`** fields are again a set of key/values which are used to uniquely identify two vertices and create a relationship between them with a certain **`label`**. Hence, this `label` value must be also specified (depending on the Blueprints implementation, it can be an empty string but we encourage you to use meaningful values).<br>
+`__from` and `__to` fields are again a set of key/values which are used to uniquely identify two vertices and create a relationship between them with a certain `label`. Hence, this `label` value must be also specified (depending on the Blueprints implementation, it can be an empty string but we encourage you to use meaningful values).<br>
 
-In the example above, we would query first two vertices (one with `name` equal to "A" and the other one with `name` equal to "B" and create a new edge between them with a `label` called "CONNECTED_TO" and a property `property` with value "C". For updates, any field other than **`__from`**, **`__to`** and **`label`** can be marked properly (in this case, property `property` would be updated):
+In the example above, we would query first two vertices (one with `import_id` equal to 1 and the other one with `import_id` equal to 2 and create a new edge between them with a `label` called "CONNECTED_TO". For updates, any field other than `__from`, `__to` and `label` can be marked properly (in this case, property `property` would be updated):
 
 ```json
 {
@@ -142,6 +146,8 @@ The following list specifies which properties are mandatory and which ones are o
 * Titan
     * **Required** (*blueprints.titan.**): `storage.backend`, `storage.directory`
     * **Optional** (*blueprints.titan.conf.**): see custom [Titan options](https://github.com/thinkaurelius/titan/wiki/Graph-Configuration)
+
+For examples on property files, please do check [resources test folder](https://github.com/CA-Labs/dss-data-save/tree/master/src/test/resources).
 
 ## Other comments
 
