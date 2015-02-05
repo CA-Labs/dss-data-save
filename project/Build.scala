@@ -26,6 +26,9 @@ object MyBuild extends Build {
         "org.json4s" %% "json4s-jackson" % "3.2.11",
         "com.tinkerpop.blueprints" % "blueprints-core" % "2.6.0",
         "com.tinkerpop.blueprints" % "blueprints-neo4j2-graph" % "2.6.0",
+        "com.thinkaurelius.titan" % "titan-cassandra" % "0.5.2",
+        "com.thinkaurelius.titan" % "titan-berkeleyje" % "0.5.2",
+        "com.thinkaurelius.titan" % "titan-hbase" % "0.5.2",
         "com.thinkaurelius.titan" % "titan-core" % "0.5.2",
         "com.google.guava" %  "guava" % "15.0" force(), // see this issue: https://groups.google.com/forum/#!topic/aureliusgraphs/vQ90mchs62s
         "com.tinkerpop.blueprints" % "blueprints-arangodb-graph" % "1.0.10-SNAPSHOT",

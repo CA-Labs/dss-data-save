@@ -1,5 +1,7 @@
 package com.calabs.dss.datasave
 
+import com.calabs.dss.dataimport.Parsing.Tags
+
 import com.tinkerpop.blueprints.Direction
 import org.json4s.jackson.Serialization
 
@@ -33,7 +35,7 @@ object Neo4jData {
       val props = vertex.getPropertyKeys
       val map = MutableMap.empty[String,Any]
       props.foreach(key => map.update(key, vertex.getProperty(key)))
-      map.update("id", vertex.getId)
+      map.update(Tags.IMPORT_ID, vertex.getId)
       map.toMap
     })
 
@@ -41,9 +43,10 @@ object Neo4jData {
       val props = edge.getPropertyKeys
       val map = MutableMap.empty[String,Any]
       props.foreach(key => map.update(key, edge.getProperty(key)))
-      map.update("label", edge.getLabel)
-      map.update("__from", Map("id" -> edge.getVertex(Direction.OUT).getId))
-      map.update("__to", Map("id" -> edge.getVertex(Direction.IN).getId))
+      map.update(Tags.IMPORT_ID, edge.getId)
+      map.update(Tags.LABEL, edge.getLabel)
+      map.update(Tags.FROM, Map(Tags.IMPORT_ID -> edge.getVertex(Direction.OUT).getId))
+      map.update(Tags.TO, Map(Tags.IMPORT_ID -> edge.getVertex(Direction.IN).getId))
       map.toMap
     })
 

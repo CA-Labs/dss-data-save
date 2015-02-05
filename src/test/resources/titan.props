@@ -1,0 +1,5 @@
+blueprints.titan.storage.directory::/Users/jaranda/titan/drwho-migration
+blueprints.titan.storage.backend::cassandra
+blueprints.titan.conf.storage.hostname::127.0.0.1
+blueprints.titan.conf.storage.port::9160
+blueprints.titan.conf.storage.replication-factor::1

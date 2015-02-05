@@ -26,7 +26,6 @@ trait Neo4jConfig {
   val okProps = Map[String, String](("blueprints.neo4j.directory" -> "/tmp/neo4j"), ("blueprints.neo4j.conf.allow_store_upgrade" -> "true"))
   val koProps = Map[String,String]()
   val neo4jClient = new Neo4j(okProps)
-  // Seems implicit graph declaration is not found within Neo4j class, make it explicit
   implicit val graph = neo4jClient.graph
 }
 

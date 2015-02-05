@@ -112,6 +112,7 @@ sealed trait DocumentStorageComponent extends StorageComponent {
 }
 
 sealed trait GraphStorageComponent extends StorageComponent {
+
   /**
    * Pair of criteria remaining equal and to be updated.
    * @param doc The document to update.
@@ -119,8 +120,8 @@ sealed trait GraphStorageComponent extends StorageComponent {
    */
   def getLookUpCriteria(doc: Document) : (Map[String, JValue], Map[String, JValue]) = doc match {
     case v: Vertex => {
-      (doc.props.filter{case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO)},
-        doc.props.filter{case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA) && !k.startsWith(Tags.FROM) && !k.startsWith(Tags.TO)})
+      (doc.props.filter{case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA)},
+        doc.props.filter{case (k,v) => k.startsWith(Tags.SEARCHABLE_CRITERIA)})
     }
     case e: Edge => {
       (doc.props.filter{case (k,v) => !k.startsWith(Tags.SEARCHABLE_CRITERIA)},
@@ -136,7 +137,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
      * @param graph Implicit graph instance which depends on the underlying graph db implementation used.
      * @return
      */
-    def saveDocument(doc: Document)(implicit graph: Graph) : Unit = remapDocumentProps(doc) match {
+    def saveDocument(doc: Document)(implicit graph: Graph) : Unit = doc match {
       case v: Vertex => insertOrUpdate(v)
       case e: Edge => insertOrUpdate(e)
       case _ => throw new IllegalArgumentException(s"Neo4j can only handle either vertices or edges document types")
@@ -232,7 +233,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
      * @return
      */
     def getVerticesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : List[BlueprintsVertex] = {
-      // TODO: Index usage?
+      // TODO: index usage
       val query = graph.query()
       criteria.foreach{ case (k,v) => query.has(k, asJavaRecursive(v.values)) }
       query.vertices().toList
@@ -245,7 +246,7 @@ sealed trait GraphStorageComponent extends StorageComponent {
      * @return
      */
     def getEdgesByMultipleCriteria(criteria: Map[String, JValue])(implicit graph: Graph) : List[BlueprintsEdge] = {
-      // TODO: Index usage?
+      // TODO: index usage
       val query = graph.query()
       criteria.foreach{ case (k,v) => query.has(k, asJavaRecursive(v.values)) }
       query.edges().toList
@@ -362,7 +363,8 @@ class ArangoDB(props: Map[String, String]) extends GraphStorage with ArangoDBCom
 class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent {
 
   private[this] val titanPrefix = "titan."
-  private[this] val confPrefix = blueprintsConfPrefix ++ titanPrefix
+  private[this] val titanConfPrefix = "conf."
+  private[this] val confPrefix = blueprintsConfPrefix ++ titanPrefix ++ titanConfPrefix
 
   private [this] object Props {
     val DIRECTORY = "storage.directory"
@@ -392,7 +394,7 @@ class Titan(props: Map[String, String]) extends GraphStorage with TitanComponent
         val titanConfiguration = new BaseConfiguration()
         titanConfiguration.addProperty(Props.DIRECTORY, props.get(requiredProps.get(Props.DIRECTORY)).get)
         titanConfiguration.addProperty(Props.BACKEND, props.get(requiredProps.get(Props.BACKEND)).get)
-        props.filter{case (k,v) => k.startsWith(confPrefix) && !requiredProps.contains(k)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(confPrefix, ""), v)}
+        props.filter{case (k,v) => k.startsWith(confPrefix) && !requiredProps.contains(k)}.foreach{case (k,v) => titanConfiguration.addProperty(k.replace(titanConfPrefix, ""), v)}
         TitanFactory.open(titanConfiguration)
       }
     }

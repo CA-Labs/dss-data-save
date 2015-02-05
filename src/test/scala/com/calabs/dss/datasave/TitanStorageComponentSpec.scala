@@ -22,7 +22,6 @@ trait TitanConfig {
   val okProps = Map[String, String]("blueprints.titan.storage.directory" -> "/tmp/titan", "blueprints.titan.storage.backend" -> "inmemory")
   val koProps = Map[String, String]()
   val titanClient = new Titan(okProps)
-  // Seems implicit graph declaration is not found within Neo4j class, make it explicit
   implicit val graph = titanClient.graph
 }
 

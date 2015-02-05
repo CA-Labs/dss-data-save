@@ -56,7 +56,7 @@ object DSSDataSave {
         val props = Try(loadDbProps(config.properties))
         (json, props) match {
           case (Success(j), Success(props)) => {
-            config.db match {
+            val result = Try(config.db match {
               case Storage.Db.ArangoDB => {
                 val arango = new ArangoDB(props)
                 implicit val graph = arango.graph
@@ -115,11 +115,16 @@ object DSSDataSave {
                 // Close graph
                 graph.shutdown
               }
-              case unsupportedDb => println(Serialization.write(List(("error" -> true), ("reason" -> s"Unsupported database backend $unsupportedDb")).toMap))
+              case unsupportedDb => throw new IllegalArgumentException(s"Specified backend '$unsupportedDb' is not supported")
+            })
+
+            result match {
+              case Success(_) => println(Serialization.write(List("error" -> false, "message" -> s"Data migration finished successfully").toMap))
+              case Failure(e) => println(Serialization.write(List("error" -> true, "reason" -> s"Some error occurred during the migration: ${e.getMessage}").toMap))
             }
           }
-          case (Failure(e), _) => println(Serialization.write(List(("exception" -> true), ("reason" -> s"Invalid input: ${e.getMessage}")).toMap))
-          case (_, Failure(e)) => println(Serialization.write(List(("error" -> true), ("reason" -> s"Invalid database properties: ${e.getMessage}")).toMap))
+          case (Failure(e), _) => println(Serialization.write(List("error" -> true, "reason" -> s"Invalid input: ${e.getMessage}").toMap))
+          case (_, Failure(e)) => println(Serialization.write(List("error" -> true, "reason" -> s"Invalid database properties: ${e.getMessage}").toMap))
         }
       }
     }

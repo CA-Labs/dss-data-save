@@ -135,7 +135,7 @@ Regarding graph database properties, they should follow some specification. We s
 The following list specifies which properties are mandatory and which ones are optional for each currently supported graph database:
 * ArangoDB:
     * **Required** (*blueprints.arangodb.**): `host`, `port`, `db`, `name`, `verticesCollection`, `edgesCollction`
-    * **Optional** (*blueprints.arangodb.conf.\**): see custom [ArangoDB options]().
+    * **Optional** (*blueprints.arangodb.conf.\**): At this point, no further optional properties are supported.
 * Neo4j:
     * **Required** (*blueprints.neo4j.**): `directory`
     * **Optional** (*blueprints.neo4j.conf.**): see custom [Neo4j options](https://github.com/tinkerpop/blueprints/wiki/Neo4j-Implementation)
